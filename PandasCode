@@ -1,2 +1,8 @@
 Change Date Format : Thu Oct 31 13:09:58 2019
 datetime.datetime.strptime(time.ctime(os.path.getmtime(directory+filename)), '%a %b %d %H:%M:%S %Y').strftime('%d/%m/%Y')
+
+Create a New Dataframe 
+resdf = pd.DataFrame(columns=['SourceUrl','SchudulerType','RunningStatus'])
+
+Append Value in data frame :
+resdf =resdf.append({'SourceUrl':source,'SchudulerType':stype,'RunningStatus':res},ignore_index=True)
