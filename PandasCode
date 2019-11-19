@@ -19,3 +19,12 @@ directory="E:\\COE Automation\\Commodity Price - Sources\\115_www.eex.comen\\201
 os.chdir(directory)
 files=glob.glob('*.xlsx')
 
+Reset index from dataframe
+df1=df.reset_index()
+
+Drop column by index and removing blank rows from dataframe
+df2=df1.drop(df1.columns[0], axis = 1).dropna(how='all')
+        
+Renaming column name in dataframe
+df3=df2.rename(columns = {"level_1": "Product Desc","level_2":"Unit"})
+
