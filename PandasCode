@@ -6,3 +6,10 @@ resdf = pd.DataFrame(columns=['SourceUrl','SchudulerType','RunningStatus'])
 
 Append Value in data frame :
 resdf =resdf.append({'SourceUrl':source,'SchudulerType':stype,'RunningStatus':res},ignore_index=True)
+
+Get parrent folder path : 
+fpath =os.path.join(os.path.dirname(__file__))
+
+Get Current Date : 
+now= datetime.datetime.now()
+xdate =str(now.year) + '-' + str('{:02d}'.format(now.month)) +'-'+ str('{:02d}'.format(now.day))
