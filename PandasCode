@@ -13,3 +13,9 @@ fpath =os.path.join(os.path.dirname(__file__))
 Get Current Date : 
 now= datetime.datetime.now()
 xdate =str(now.year) + '-' + str('{:02d}'.format(now.month)) +'-'+ str('{:02d}'.format(now.day))
+
+How to iterate all files in folder :
+directory="E:\\COE Automation\\Commodity Price - Sources\\115_www.eex.comen\\2019-10-31\\"
+os.chdir(directory)
+files=glob.glob('*.xlsx')
+
