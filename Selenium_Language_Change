@@ -1,0 +1,24 @@
+from selenium import webdriver
+import pandas as pd
+import time
+from pynput.keyboard import Key, Controller
+keyboard = Controller()
+prefs = {
+  "translate_whitelists": {"th":"en"},
+  "translate":{"enabled":"true"}
+}
+options = webdriver.ChromeOptions()
+options.add_experimental_option('prefs', prefs)
+driver = webdriver.Chrome(chrome_options=options)
+driver.get('http://www.cpffeed.com/price_detail.html?product=13&page=1')
+keyboard.press(Key.end)
+time.sleep(5)
+
+html = driver.page_source
+df_list = pd.read_html(html,header=0)
+
+df = df_list[-2]
+df['Product Name']=df.at[0,'Product Name']
+#print(df)
+#print(df[1,1])
+df.to_excel('table11.xlsx',index=False)
