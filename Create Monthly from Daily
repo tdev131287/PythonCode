@@ -1,0 +1,182 @@
+from selenium import webdriver
+import time
+import datetime
+from datetime import date
+from dateutil.relativedelta import relativedelta
+import win32com.client as win32
+import os
+import glob
+import pandas as pd
+from pandas import ExcelWriter
+
+class Investing:
+    
+    def downloadfile(self,Currency):
+        
+        directory=os.path.join(os.path.join(os.path.dirname(__file__))+ '/downloaded files/Investing/')
+        os.chdir(directory)
+        files=glob.glob('*.xls*')
+        for filename in files:
+            os.unlink(filename)
+        
+
+        files=glob.glob('*.csv*')
+        for filename in files:
+            os.unlink(filename)
+            
+            
+            
+            
+        try:
+            flag='false'
+            chrome_options = webdriver.ChromeOptions()
+            path =os.path.join(os.path.dirname(__file__))+ '/downloaded files/Investing/'
+            path=path.replace("/","\\")
+            prefs = {'download.default_directory' : path}
+            chrome_options.add_experimental_option('prefs', prefs)
+            driver = webdriver.Chrome(chrome_options=chrome_options)
+       
+            for cur in Currency:
+                print(cur)
+                nxurl='https://www.investing.com/currencies/'+cur+'-historical-data'
+                driver.get(nxurl)
+                time.sleep(10)
+                
+                if flag=='false':                  
+                    
+                    flag='true'
+                    xx=driver.find_element_by_xpath('//*[@id="column-content"]/div[4]/div/a')
+                    xx.click()
+                    driver.find_element_by_id('loginFormUser_email').send_keys('Enter user ID')
+                    driver.find_element_by_id('loginForm_password').send_keys('Enter Password')                  
+                    driver.find_element_by_xpath('//*[@id="signup"]/a').click()
+                    time.sleep(10)
+                    
+                    
+                driver.find_element_by_id('widgetFieldDateRange').click()
+                time.sleep(3)
+                
+                
+                driver.find_element_by_id('startDate').clear()
+                driver.find_element_by_id('startDate').send_keys('')
+                six_months = date.today() + relativedelta(months=-8)
+                driver.find_element_by_id('startDate').send_keys(datetime.datetime.strptime(str(six_months), '%Y-%m-%d').strftime('%m/%d/%Y'))
+                
+                driver.find_element_by_id('endDate').clear()
+                driver.find_element_by_id('endDate').send_keys('')
+                six_months = date.today() + relativedelta(months=0)
+#                    print(datetime.datetime.strptime(str(six_months), '%Y-%m-%d').strftime('%m/%d/%Y'))
+                driver.find_element_by_id('endDate').send_keys(datetime.datetime.strptime(str(six_months), '%Y-%m-%d').strftime('%m/%d/%Y'))
+                time.sleep(5)
+                driver.find_element_by_id('applyBtn').click()
+                time.sleep(5)
+                
+#                    driver.find_element_by_xpath('//*[@id="column-content"]/div[4]/div/a').click()
+                print('2')
+                xx=driver.find_element_by_xpath('//*[@id="column-content"]/div[4]/div/a')
+                print('3')
+                xx.click()
+                time.sleep(5)
+            driver.close()
+            
+        except Exception as e:
+             print('Show Error')   
+
+    def createAverage(self):
+           
+            directory=os.path.join(os.path.dirname(__file__))+ '/downloaded files/Investing/'
+            os.chdir(directory)
+#            adding extrac column of currency name
+            files=glob.glob('*.csv*')
+            
+            for filename in files:
+                print(filename)
+                data_frame = pd.read_csv((os.path.dirname(__file__))+ '/downloaded files/Investing/' + filename,index_col =0)  
+                filename1=filename.replace('.csv','')
+                filename1=filename1.replace(' Historical Data','')
+                filename1=filename1.replace('_','')                        
+                data_frame['Currency'] = filename1.replace('.xlsx','')
+                data_frame.to_csv((os.path.dirname(__file__))+ '/downloaded files/Investing/' + filename)
+            
+            
+            
+            files=glob.glob('*.csv*')
+            
+            for filename in files:
+                data_frame = pd.read_csv((os.path.dirname(__file__))+ '/downloaded files/Investing/' + filename,usecols=[0,1],parse_dates =["Date"], index_col ="Date",converters={'Price': lambda x: str(x)})
+                data_frame=data_frame.apply(lambda x: x.str.replace(',',''))
+                print(filename)
+                
+                data_frame['Price']=data_frame['Price'].astype('float')
+                
+                monthly_resampled_data = data_frame.Price.resample('M').mean()                 
+                filename1=filename.replace('csv','xlsx')
+                filename1=filename1.replace(' Historical Data','')
+                filename1=filename1.replace('_','')                
+                monthly_resampled_data.to_excel((os.path.dirname(__file__))+ '/downloaded files/Investing/' + filename1)
+            
+            files=glob.glob('*.xls*')
+            
+            for filename in files:
+                data_frame = pd.read_excel((os.path.dirname(__file__))+ '/downloaded files/Investing/' + filename,usecols=[0,1], index_col =0)                           
+                filename1=filename.replace('csv','xlsx')
+                filename1=filename1.replace(' Historical Data','')
+                filename1=filename1.replace('_','')
+                data_frame['Currency'] = filename.replace('.xlsx','')
+                data_frame.to_excel((os.path.dirname(__file__))+ '/downloaded files/Investing/' + filename1)
+      
+    def CombineSheet(self):
+        
+        writer = ExcelWriter((os.path.dirname(__file__))+ '/downloaded files/' + 'CurrencyRawData_average.xlsx')
+        
+        directory=os.path.join(os.path.dirname(__file__))+ '/downloaded files/Investing/'
+        os.chdir(directory)
+#            adding extrac column of currency name
+        files=glob.glob('*.xls*')
+        
+        for filename in files:
+            excel_file = pd.ExcelFile(filename)
+            (_, f_name) = os.path.split(filename)
+            (f_short_name, _) = os.path.splitext(f_name)
+            for sheet_name in excel_file.sheet_names:
+                df_excel = pd.read_excel(filename, sheet_name=sheet_name)
+                df_excel.to_excel(writer, f_short_name, index=False)
+        
+        writer.save()
+
+    def SendMail(self):
+        outlook = win32.Dispatch('outlook.application')
+        mail = outlook.CreateItem(0)
+        mail.To = 'kumar.amit@thesmartcube.com;anirban.basak@thesmartcube.com;maksood.alam@thesmartcube.com'
+        mail.Subject = 'Currency Rates'
+        mail.Body = 'Pleae find the attach files'
+
+
+        # To attach a file to the email (optional):
+
+        directory=os.path.join(os.path.dirname(__file__))+ '/downloaded files/'
+        os.chdir(directory)
+        files=glob.glob('*.xls*')
+        for filename in files:
+            
+            print(os.path.join(os.path.dirname(__file__))+ filename)
+            attachment=os.path.join(os.path.dirname(__file__))+ '/downloaded files/' + filename
+            mail.Attachments.Add(attachment)
+        mail.Send()
+   
+    
+
+ 
+obj = Investing()
+lst=['usd-brl','eur-usd','usd-idr','usd-inr','usd-jpy','usd-cny','usd-thb','usd-myr','php-usd']
+#lst=['usd-cny','usd-thb','usd-myr','php-usd']
+
+obj.downloadfile(lst)
+obj.createAverage()
+obj.CombineSheet()
+
+###lst=['eur-usd','usd-cny','usd-jpy','gbp-jpy','usd-gbp','eur-gbp','cny-gbp','usd-mxn','usd-cad','usd-brl']
+#
+#
+#obj.convertCSVtoEXcel_1()
+##obj.SendMail()
