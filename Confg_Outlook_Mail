@@ -1,0 +1,21 @@
+outlook = win32.Dispatch('outlook.application')
+mail = outlook.CreateItem(0)
+#mail.To = 'hemant.saigal@thesmartcube.com;maksood.alam@thesmartcube.com;automation@thesmartcube.com'
+mail.To = 'devendra.tripathi@thesmartcube.com;maksood.alam@thesmartcube.com;hemant.saigal@thesmartcube.com'
+mail.Subject = 'Commodity Prices:- www.acg.com'
+mail.Body = 'Pleae find the attached weekly files'
+
+
+# To attach a file to the email (optional):
+print("Source file path : " +filepath )
+
+#directory='E:\\Hemant\\a3m-asso.fr\\'
+directory=filepath
+os.chdir(directory)
+files=glob.glob('*.xlsx')
+for filename in files:
+    print(os.path.join(os.path.dirname(__file__))+ filename)
+#    attachment='E:\\Hemant\\a3m-asso.fr\\' + filename
+    attachment=currentpath + filename
+    mail.Attachments.Add(attachment)
+mail.Send()
