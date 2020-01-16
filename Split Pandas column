@@ -1,0 +1,2 @@
+all_data['Year'] = all_data['Date'].str.split('_')[0]
+all_data['Week'] = all_data['Date'].str.split('_')[1]
