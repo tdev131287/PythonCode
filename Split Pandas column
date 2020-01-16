@@ -1,2 +1,7 @@
-all_data['Year'] = all_data['Date'].str.split('_')[0]
-all_data['Week'] = all_data['Date'].str.split('_')[1]
+new  = dfExcel['ISA Daily Price'].str.split(" ", n = 1, expand = True)
+dfExcel['Unit'] = new[1]
+dfExcel['Unit'] =dfExcel['Unit'].str.replace(' \+','')
+dfExcel['Value'] = new[0]
+dfExcel['Date'] =  pd.to_datetime(dfExcel['Date'])
+Year = pd.DatetimeIndex(dfExcel['Date']).year
+Month = pd.DatetimeIndex(dfExcel['Date']).month
