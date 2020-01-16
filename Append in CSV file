@@ -1,0 +1,60 @@
+import os
+import pandas as pd
+import datetime
+import requests
+import openpyxl
+
+
+now = datetime.datetime.now()
+datestring=str(now.year) + '-' + str('{:02d}'.format(now.month)) +'-'+ str(now.day)
+folderName= datestring
+
+folderName=os.path.join(os.path.dirname(__file__)) + '/' + 'Downloaded files' + '/'
+
+if not os.path.exists(folderName):
+    os.mkdir(folderName)
+
+
+Tickers=pd.read_excel('file:///' + os.path.join(os.path.dirname(__file__)) + '/Links.xlsx',sheet_name='Sheet1')
+
+df1 = pd.DataFrame(columns=['Date', 'ISA Daily Price', '15 Day Average','White Sugar Price Index_col1','White Sugar Price Index_col2'])
+
+df1.to_csv(folderName + 'Sugar_International Sugar Organization_Americas' + '.csv',index=False) 
+    
+for Tickers_Loop in range(len(Tickers)):
+    url=Tickers.loc[Tickers_Loop,'Links']   
+    filename=Tickers.loc[Tickers_Loop,'FileName']
+    try:  
+        html = requests.get(url).content
+        df_list = pd.read_html(html)
+        df = df_list[-2]
+        #        df1.append(df,ignore_index = True)
+        #        print(df1)
+        df=df[1:]
+        df.to_csv(folderName + 'Sugar_International Sugar Organization_Americas' + '.csv',mode='a',index=False,header=0)
+        
+    except:
+        print('File not download for ' + url)
+
+dfExcel=pd.read_csv(folderName + 'Sugar_International Sugar Organization_Americas' + '.csv')
+dfExcel.to_excel(folderName + 'Sugar_International Sugar Organization_Americas' + '.xlsx',index=False)
+
+#Creating detail sheet
+wb=openpyxl.load_workbook(filename=folderName + 'Sugar_International Sugar Organization_Americas' + '.xlsx')
+sheet=wb.create_sheet('Details')
+
+sheet.cell(row=1, column=1).value='Commodity'
+sheet.cell(row=2, column=1).value='Source'
+sheet.cell(row=3,column=1).value='Source Link'
+sheet.cell(row=4,column=1).value='Unit'
+sheet.cell(row=5,column=1).value='Geography'
+
+
+sheet.cell(row=1, column=2).value='Sugar'
+sheet.cell(row=2, column=2).value='International Sugar Organization'
+sheet.cell(row=3,column=2).value='https://www.isosugar.org/prices.php'
+sheet.cell(row=4,column=2).value='cts/lb'
+sheet.cell(row=5,column=2).value='Americas'
+    
+wb.save(folderName +'Sugar_International Sugar Organization_Americas' + '.xlsx')
+wb.close()
