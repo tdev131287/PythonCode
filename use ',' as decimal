@@ -1,0 +1,79 @@
+import os
+import pandas as pd
+import datetime
+import requests
+from datetime import date
+from dateutil.relativedelta import relativedelta
+from bs4 import BeautifulSoup
+
+now = datetime.datetime.now()
+datestring=str(now.year) + '-' + str('{:02d}'.format(now.month)) +'-'+ str('01')
+folderName= datestring
+
+folderName=os.path.join(os.path.dirname(__file__)) + '/' + 'Downloaded files' + '/'
+
+if not os.path.exists(folderName):
+    os.mkdir(folderName)
+
+look_up = {'January': 1, 'February': 2,'Febuary': 2, 'March': 3, 'April': 4, 'May': 5,
+            'June': 6, 'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
+    
+Tickers=pd.read_excel('file:///' + os.path.join(os.path.dirname(__file__)) + '/Links.xlsx',sheet_name='Sheet1')
+
+
+all_Data_Final=pd.DataFrame()
+yr=''
+for Tickers_Loop in range(len(Tickers)):
+    all_Data=pd.DataFrame()
+    url=Tickers.loc[Tickers_Loop,'Links'] 
+    CommodityName=Tickers.loc[Tickers_Loop,'CommodityName']
+    Group=Tickers.loc[Tickers_Loop,'Group']
+    print("Processing:- " + CommodityName)
+    Unit=Tickers.loc[Tickers_Loop,'Unit']
+    html = requests.get(url)
+    df_list = pd.read_html(html.content,header=0,decimal=',')
+#    tree.xpath('//*[@id="content"]/div/div[2]/p/a[1]')
+
+    html_soup = BeautifulSoup(html.text, 'html.parser')
+    d=html_soup.findAll('a',class_='active')
+    yr=int(d[1].text)
+    
+    
+    for x in range(len(df_list),0,-1):
+        df = df_list[-int(x)]
+        df['Year']=yr
+        all_Data=all_Data.append(df)
+        yr=yr-1
+    cols = [0,1,4]
+    all_Data=all_Data[all_Data.columns[cols]]
+    all_Data.columns=['date','Price','Year']
+    all_Data=all_Data[all_Data['date']!='month']
+
+    all_Data['Month'] = all_Data['date'].apply(lambda x: look_up[x])
+    all_Data['CommodityName']=CommodityName
+    all_Data['Unit']=Unit
+    all_Data['SourceName']='Westmetall'
+    all_Data['SourceLink']='https://www.westmetall.com/en/markdaten.php'
+    all_Data['Geo']='Europe'
+    all_Data['Group']=Group
+    
+    all_Data['Price'] = all_Data['Price'].astype(str)
+    
+    all_Data['Price'] = [x.replace('.', '') for x in all_Data['Price']]
+    
+    all_Data['Price'] = [x.replace(',', '.') for x in all_Data['Price']]
+    all_Data['Price']=pd.to_numeric(all_Data['Price'])
+    all_Data['Day']=1
+    all_Data['Date'] =pd.to_datetime(all_Data[['Year', 'Month', 'Day']])
+    all_Data=all_Data.drop(['Year', 'Month', 'Day'],axis=1)
+    all_Data = all_Data.sort_values(by=['CommodityName','Date'], ascending=[True,False])
+    all_Data['Driver_Type']='Commodity'
+    all_Data['Extraction_Process']='Web Crawl'
+    all_Data = all_Data[['Driver_Type','Group','CommodityName', 'Geo', 'Unit','SourceName','SourceLink','Extraction_Process','Date','Price']]
+    all_Data_Final=all_Data_Final.append(all_Data)
+    
+all_Data_Final.to_excel(folderName+ 'Westmetall_Data.xlsx',index=False)
+    
+
+
+
