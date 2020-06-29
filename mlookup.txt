@@ -1,0 +1,55 @@
+Function mlookup(a As String, b As Range, c As Long, Optional lngPos As Long = 0) As String
+
+    Dim arr()
+    arr = b
+    Dim I As Long
+    Dim dic As Object
+    Set dic = CreateObject("scripting.dictionary")
+    
+    For I = 1 To UBound(arr)
+        If arr(I, 1) = a Then
+        '  If arr(i, 1) = a And arr(i, c) <> "" Then         '   ??????????, ????????
+            dic.Add I, arr(I, c)        '   ????????????????item
+        End If
+    Next I
+    
+    Erase arr()     '   ????
+    
+    Dim vl As Variant
+    Dim va As String
+    Dim lngctr          As Long
+    vl = dic.Items      '   ??????item????
+    Set dic = Nothing   '   ????
+    
+    lngctr = 1
+    If lngPos > 0 Then
+    
+        For Each x In vl
+            If lngctr = lngPos Then
+                mlookup = x
+                Exit For
+            End If
+            lngctr = lngctr + 1
+        Next x
+
+    ElseIf lngPos = -1 Then
+        lngctr = 0
+        For Each x In vl
+            If lngctr = UBound(vl) Then
+                mlookup = x
+                Exit For
+            End If
+            lngctr = lngctr + 1
+        Next x
+        
+    Else
+        If UBound(vl) = -1 Then
+            mlookup = "None"        '   ??????????
+        Else
+            mlookup = Join(vl, ",")      '   ???????
+            Erase vl        '   ????
+        End If
+    End If
+
+
+End Function
