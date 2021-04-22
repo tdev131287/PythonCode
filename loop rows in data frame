@@ -1,0 +1,6 @@
+for rowloop in range(0,len(df)):      
+        if pd.notnull(df.iloc[rowloop,0]):
+            if len(df.iloc[rowloop,0])==4:
+                df.iloc[rowloop,0]=np.NaN
+    
+    df=df[:-4]
