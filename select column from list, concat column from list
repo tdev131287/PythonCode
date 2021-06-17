@@ -1,0 +1,184 @@
+import os
+import pandas as pd
+import requests
+import datetime
+import time
+
+def usda7_beef():
+    
+    
+    mapping=pd.read_excel(os.path.join(os.path.dirname(__file__))  + "/mapping_Final.xlsx",sheet_name='main')
+    
+    dfm = pd.read_excel(os.path.join(os.path.dirname(__file__)) + '/codes.xlsx',sheet_name='temp')
+    all_data = pd.DataFrame() 
+    
+    now = datetime.datetime.now()
+    
+    
+    
+    # df1 = pd.DataFrame(columns=['report_date','weighted_avg_price','report_title','office_name','market_location_name','market_type','market_type_category'])
+    # df2 = pd.DataFrame(columns=['report_date','wtd_avg_price','report_title','office_name','market_location_name','market_type','market_type_category'])
+    
+    start_date = datetime.date(2020, 12, 1)
+    # end_date = datetime.date(2021, 1, 4)
+    end_date = now
+    # import ipdb;ipdb.set_trace()
+    
+    # delta = datetime.timedelta(days=181)   
+    # stDate = start_date
+        
+        
+    finaldata=pd.DataFrame()
+    
+    for xline in range(len(dfm)):  
+        code = dfm.loc[xline,'slug_id']
+        section= dfm.loc[xline,'section']
+        columns= dfm.loc[xline,'columns']
+        comb_column= dfm.loc[xline,'comb_column']
+        date_column= dfm.loc[xline,'date_column']
+        value_column= dfm.loc[xline,'value_column']
+        ls=columns.split(',')
+        comls=comb_column.split(',')
+        
+        
+        
+        link= "https://mpr.datamart.ams.usda.gov/services/v1.1/reports/" + str(code) + "/" +  section +  "?q=published_date=" + str(start_date.strftime("%m/%d/%Y")) + ":" + str(end_date.strftime("%m/%d/%Y"))
+        link=link.replace('%',str('%25'))
+        link=link.replace(' ',str('%20'))
+        
+        # import ipdb;ipdb.set_trace()
+        try:
+            response = requests.get(link)   
+            loaded_json=response.json()
+            
+            df=pd.DataFrame(loaded_json['results'])
+            df['section']=section
+   
+            
+            
+            
+            df=df[[c for c in df.columns if c in ls]]
+            df.rename(columns = {date_column:'timeframe_monthly',value_column:'value'}, inplace = True)
+            df.to_excel('dummy.xlsx')
+            # import ipdb;ipdb.set_trace()
+            df['combined'] = df[comls].apply(lambda row: '_'.join(row.values.astype(str)), axis=1)
+            
+            finaldata=finaldata.append(df)
+        except:
+            print('error in code - ' + str(link))
+            pass
+    # # columns = list(df)
+    # # print(columns)
+    
+    finaldata.to_excel('dummy1.xlsx')
+    # import ipdb;ipdb.set_trace()
+    # finaldata=pd.read_excel('rawdata-beef.xlsx')
+    finaldata['timeframe_monthly']= pd.to_datetime(finaldata['timeframe_monthly'])
+    # finaldata['Month']=finaldata['timeframe_monthly'].dt.month
+    # finaldata['Year']=finaldata['timeframe_monthly'].dt.year
+    
+    finaldata['value']=finaldata['value'].replace(",","",regex=True)
+    # finaldata['price_range_low']=finaldata['price_range_low'].replace(",","",regex=True)
+    
+    finaldata['value']=pd.to_numeric(finaldata["value"])
+    finaldata=finaldata[(finaldata['value']!=0) & (finaldata['value'].notnull())]
+    
+
+
+    # finaldata['value'] = finaldata[['price_range_high', 'price_range_low']].mean(axis=1)
+    # finaldata.rename(columns = {'report_title':'commodity_name_source'}, inplace = True)
+    # finaldata["value"] = pd.to_numeric(finaldata["value"])
+    
+    # finaldata=finaldata.groupby(['Month','Year','commodity_name_source'], as_index=False)['value'].mean()
+    # finaldata['Day']=1
+    # finaldata['timeframe_monthly'] =pd.to_datetime(finaldata[['Year', 'Month', 'Day']])
+    # 
+    
+    # finaldata['timeframe_monthly'] = finaldata['timeframe_monthly'].dt.strftime('%b-%Y')
+    
+    finaldata=mapping.merge(finaldata,on='combined')  
+    finaldata = finaldata.sort_values(by=['commodity_name','timeframe_monthly'], ascending=[True,False])
+    finaldata['is_approved']=''
+    finaldata['db_id']=''
+    finaldata = finaldata[['db_id','source_ref','commodity_name','commodity_group','notes','commodity_grade','commodity_subgrade', 'geography', 'unit','timeframe_monthly','value','is_approved']]
+    
+    
+    
+    
+    finaldata.to_excel(os.path.join(os.path.dirname(__file__)) + '/output/2456_Data_final.xlsx',index=False)
+    
+    # time.sleep(15)
+
+    
+#        print(response.text)   
+#     try:                                                               
+#         loaded_json=response.json()
+#         print('Data1')
+#         import ipdb;ipdb.set_trace()
+#         item = loaded_json['results']
+# #            df= pd.DataFrame(item)
+#         for t in item:            
+#             df1 = df1.append({'report_date':t['report_date'],'weighted_avg_price':t['weighted_avg_price'],'report_title':t['report_title'],'office_name':t['office_name'],'market_location_name':t['market_location_name'],'market_type':t['market_type'],'market_type_category':t['market_type_category']}, ignore_index=True)
+
+#         df1.to_excel(str(code) + '.xlsx',index=False)  
+#     except:
+#         try:
+#             loaded_json=response.json()
+#             print('Data2')
+#             item = loaded_json[loaded_json['results']]
+#             df=pd.DataFrame(item)
+
+#             for t in item:            
+#                 df2 = df2.append({'report_date':t['report_date'],'previous_day_head_count':t['previous_day_head_count'],'narrative':t['narrative'],'class_description':t['class_description'],'selling_basis_description':t['selling_basis_description'],'grade_description':t['grade_description'],'head_count':t['head_count'],'weight_range_low':t['weight_range_low'],'weight_range_high':t['weight_range_high'],'weight_range_avg':t['weight_range_avg'],'price_range_low':t['price_range_low'],'price_range_high':t['price_range_high'],'weighted_avg_price':t['weighted_avg_price'],'report_title':t['report_title'],'slug_name':t['slug_name'],'slug_id':t['slug_id'],'office_name':t['office_name'],'office_code':t['office_code'],'office_city':t['office_city'],'office_state':t['office_state'],'market_location_name':t['market_location_name'],'market_location_city':t['market_location_city'],'market_location_state':t['market_location_state'],'market_type':t['market_type'],'market_type_category':t['market_type_category'],'published_date':t['published_date']}, ignore_index=True)
+
+#             df2.to_excel(str(code) + '.xlsx',index=False)
+#         except:
+#             print('Error')
+#             pass
+# #        
+#     stDate=edDate + datetime.timedelta(days=1)
+    # break
+    # break
+
+    
+
+#df.to_excel('USDA_Historical_All.xlsx',index=False)    
+
+#all_data=df['report_date','weighted_avg_price']
+#
+#
+#
+#
+##    all_data['value'] = pd.to_numeric(all_data['value'])
+##all_data['Month'] = all_data['Month'].apply(lambda x: look_up[x])
+#all_data['Year'] = pd.to_numeric(all_data['Year'])
+##    all_data['Day']=1
+##    all_data['Date'] =pd.to_datetime(all_data[['Year', 'Month', 'Day']])
+#
+#
+#all_data=all_data.groupby(['Year','Month','driver_code','driver_description'], as_index=False)['value'].mean()
+#all_data['dd']=1
+#all_data['timeframe_monthly']=pd.to_datetime((all_data.Year*10000+all_data.Month*100+all_data.dd).apply(str),format='%Y%m%d')
+#all_data=all_data.drop(['Year','dd','Month'],axis=1)
+#all_data = all_data.sort_values(by=['driver_code'], ascending=[True])
+#
+#all_data['db_id']=''
+#all_data['is_approved']=''
+#all_data['unit']='Index'
+#all_data['geography']='Germany'
+#
+#
+#all_data = all_data[["db_id","driver_code", "driver_description","geography", "unit", "timeframe_monthly", "value" , "is_approved"]]  
+#   
+#
+#all_data.reset_index(drop=True, inplace=True)
+#all_data=all_data[all_data.value != 0]
+#   
+#all_data = all_data[all_data.value.notnull()]
+#
+#all_data['timeframe_monthly'] =  all_data['timeframe_monthly'].dt.strftime('%b-%Y') #pd.to_datetime(df['timeframe_monthly'],format='%b-%Y')
+#             
+#all_data.to_excel('Historical_formatted.xlsx',index=False) 
+
+if __name__ == '__main__':
+    usda7_beef()
