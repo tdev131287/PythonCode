@@ -1,0 +1,103 @@
+import requests
+import logging 
+from selenium import webdriver
+import time
+import pandas as pd
+import zipfile
+import os
+from selenium.webdriver.common.keys import Keys
+import glob
+import shutil
+import datetime
+
+chrome_options = webdriver.ChromeOptions()
+path=os.path.join(os.path.dirname(__file__)) + '/Temp/'
+path= path.replace("/","\\")
+prefs = {'download.default_directory' : path}
+chrome_options.add_experimental_option('prefs', prefs)
+driver = webdriver.Chrome(chrome_options=chrome_options)
+
+
+#Chart data
+
+now = datetime.datetime.now()
+folderName=str(now.day) +'_'+ str(now.month)+'_' + str(now.year)
+
+folderName=os.path.join(os.path.dirname(__file__)) + '/DownloadPDF/'
+
+# if not os.path.exists(folderName):
+#     os.mkdir(folderName)
+    
+
+for file in os.listdir(os.path.join(os.path.dirname(__file__)) + '/Temp/'):    
+    os.remove(os.path.join(os.path.dirname(__file__)) + '/Temp/'+ str(file))
+
+# for file in os.listdir(folderName):    
+#     os.remove(folderName + str(file))
+
+driver.get('https://amplifipro.thesmartcube.com')
+
+driver.find_elements_by_id('email')[0].send_keys('devendra.tripathi@thesmartcube.com')
+driver.find_elements_by_id('password')[0].send_keys('System@4321')
+driver.find_elements_by_css_selector("[class='btn btn-sm whiteBG btn-primary signInbn']")[0].click()
+time.sleep(10)
+
+# import ipdb;ipdb.set_trace()
+#chart data
+Tickers=pd.read_excel('file:///' + os.path.join(os.path.dirname(__file__)) + '/Ampro_Report_final.xlsx',sheet_name='Sheet1')
+
+for Tickers_Loop in range(len(Tickers)):
+        url=Tickers.loc[Tickers_Loop,'PDFUrl']
+        fName=Tickers.loc[Tickers_Loop,'TitleName']
+  
+        try:  
+            driver.get(url)
+            time.sleep(10)
+        except:
+            print('File not download for ' + url)
+
+        for file in os.listdir(os.path.join(os.path.dirname(__file__)) + '/Temp/'):
+            try:
+                # import ipdb;ipdb.set_trace()
+                os.rename(os.path.join(os.path.dirname(__file__)) + '/Temp/' + str(file), os.path.join(os.path.dirname(__file__)) + '/Temp/' + str(fName) + '.pdf')
+#                print(os.path.join(os.path.dirname(__file__)) + '/Temp/' + str(fName) + '.xlsx')
+#                print(folderName)
+                time.sleep(2)
+                shutil.move(os.path.join(os.path.dirname(__file__)) + '/Temp/' + str(fName) + '.pdf', folderName)
+                time.sleep(2)
+            except:
+                print('error while rename')
+
+#TextData
+# now = datetime.datetime.now()
+# folderName=str(now.day) +'_'+ str(now.month)+'_' + str(now.year)
+# folderName=os.path.join(os.path.dirname(__file__)) + '/Text Data/' + folderName + '/'
+
+# if not os.path.exists(folderName):
+#     os.mkdir(folderName)
+
+# for file in os.listdir(folderName):
+#     os.remove(folderName + str(file))
+    
+# Tickers=pd.read_excel('file:///' + os.path.join(os.path.dirname(__file__)) + '/Scraping_V6.xlsm',sheet_name='Text')
+
+# for Tickers_Loop in range(len(Tickers)):
+#         url=Tickers.loc[Tickers_Loop,'Link']
+#         fName=Tickers.loc[Tickers_Loop,'FileName']
+      
+#         try:  
+#             driver.get(url)
+#             time.sleep(3)
+#         except:
+#             print('File not download for ' + url)
+
+#         for file in os.listdir(os.path.join(os.path.dirname(__file__)) + '/Temp/'):
+#             try:
+#                 os.rename(os.path.join(os.path.dirname(__file__)) + '/Temp/' + str(file), os.path.join(os.path.dirname(__file__)) + '/Temp/' + str(fName) + '.xlsx')
+#                 shutil.move(os.path.join(os.path.dirname(__file__)) + '/Temp/' + str(fName) + '.xlsx', folderName)
+#             except:
+#                 print(str(fName))
+                print('error while rename')
+                
+driver.quit()
+
