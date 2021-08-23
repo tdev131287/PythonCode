@@ -9,7 +9,10 @@ from datetime import date
 
 import openpyxl
 
-
+# ==================decreasing 2 days from the date==================
+end_date = datetime.datetime.today() - datetime.timedelta(days=2)
+end_date=end_date.date()
+# ==============================================================
 
 now = datetime.datetime.now()
 datestring=str(now.year) + '-' + str('{:02d}'.format(now.month)) +'-'+ str(now.day)
