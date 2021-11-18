@@ -1,0 +1,58 @@
+import requests
+import pandas as pd
+from selenium import webdriver
+import time
+import os
+from selenium.webdriver.chrome.options import Options
+# import glob
+import datetime
+from datetime import date
+
+from dateutil.relativedelta import relativedelta
+
+def get_HistoricalData():
+
+    driver = webdriver.Chrome()
+
+    today=datetime.date.today()
+
+
+    start_date = today - relativedelta(months=1)
+
+    end_date = today- relativedelta(months=1)
+
+
+    all_data=pd.DataFrame()
+
+    while start_date <= end_date:
+
+        Year=start_date.year
+        Month=start_date.month
+
+        strDate=start_date.replace(day=1)
+
+        strDate = strDate+relativedelta(months=1)
+        strDate=strDate- datetime.timedelta(days=1)
+        strDate=strDate.strftime('%Y-%m')
+        print(strDate)
+
+        url='https://www.gtb.org.tr/aylik-bulten?tarih='+strDate
+
+        print(url)
+
+        driver.get(url)
+
+        html = driver.page_source
+        df_list = pd.read_html(html)
+        # import ipdb; ipdb.set_trace()
+        for x in range(1,len(df_list)+1):
+            print(x)
+            df = df_list[-x]
+            df['timeframe_monthly']=strDate
+            all_data = all_data.append(df)
+
+        start_date += relativedelta(months=1)
+
+    all_data.to_excel('dummy.xlsx',index=False)
+
+    driver.quit()
