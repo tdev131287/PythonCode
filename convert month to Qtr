@@ -1,0 +1,129 @@
+import pandas as pd
+import os
+from xml.dom import minidom
+from selenium import webdriver
+import time
+
+
+
+def FetchCPData_France():
+
+
+
+    Tickers=pd.read_excel(os.path.join(os.path.dirname(__file__))+ "/Labour - France - mapping.xlsx",converters={'driver_code': lambda x: str(x)},sheet_name='Labour')
+    df = pd.DataFrame(columns=['code','Date','Value'])
+    # import ipdb; ipdb.set_trace()
+    for Tickers_Loop in range(len(Tickers)):
+        url=Tickers.loc[Tickers_Loop,'API']
+        # name=Tickers.loc[Tickers_Loop,'CD_name']
+        code=Tickers.loc[Tickers_Loop,'driver_code']
+
+        # driver = webdriver.Chrome()
+        # driver.get(url)
+
+
+        try:
+
+            driver = webdriver.Chrome()
+            driver.get(url)
+            r=driver.page_source
+            path=os.path.join(os.path.dirname(__file__))+ "/downloaded files/"  + str(code)  + ".xml"
+            path=path.replace("/","\\")
+
+            with open(path, 'wb') as f:
+                f.write(r.encode())
+        except Exception as e:
+            print(e)
+
+        driver.quit()
+
+        mydoc = minidom.parse(path)
+
+        items = mydoc.getElementsByTagName('Series')
+        for elem in items:
+
+            code=elem.attributes['IDBANK'].value
+
+            # Description=elem.attributes['TITLE_EN'].value
+
+            items1 = elem.getElementsByTagName('Obs')
+
+            for elem1 in items1:
+
+                df = df.append({'driver_code': str(code),'Date': elem1.attributes['TIME_PERIOD'].value,'Value': elem1.attributes['OBS_VALUE'].value}, ignore_index=True)
+
+
+    result=df
+    # import ipdb; ipdb.set_trace()
+    time.sleep(2)
+    new  = result['Date'].str.split("-", n = 1, expand = True)
+    result['Month'] = new[1]
+    result['Year'] =new[0]
+    result['Day']=1
+
+    #Convert Qtr to Monthly data
+    Q1 = result[result['Month'] == 'Q1']
+    Q2 = result[result['Month'] == 'Q2']
+    Q3 = result[result['Month'] == 'Q3']
+    Q4 = result[result['Month'] == 'Q4']
+
+    all_data=pd.DataFrame()
+
+    Q1['Month']=1
+    all_data=all_data.append(Q1)
+    Q1['Month']=2
+    all_data=all_data.append(Q1)
+    Q1['Month']=3
+    all_data=all_data.append(Q1)
+
+    Q2['Month']=4
+    all_data=all_data.append(Q2)
+    Q2['Month']=5
+    all_data=all_data.append(Q2)
+    Q2['Month']=6
+    all_data=all_data.append(Q2)
+
+    Q3['Month']=7
+    all_data=all_data.append(Q3)
+    Q3['Month']=8
+    all_data=all_data.append(Q3)
+    Q3['Month']=9
+    all_data=all_data.append(Q3)
+
+    Q4['Month']=10
+    all_data=all_data.append(Q4)
+    Q4['Month']=11
+    all_data=all_data.append(Q4)
+    Q4['Month']=12
+    all_data=all_data.append(Q4)
+
+    result=all_data
+
+    result['Date'] =pd.to_datetime(result[['Year', 'Month', 'Day']])
+
+
+    result=result.drop(['Year','Day','Month'],axis=1)
+
+    # mapinig=pd.read_excel(os.path.join(os.path.dirname(__file__))+ "/Labour - France - mapping.xlsx",converters={'driver_code': lambda x: str(x)},sheet_name='temp')
+
+    # ipdb.set_trace()
+    # result.to_excel('test.xlsx')
+    # import ipdb; ipdb.set_trace()
+    result=Tickers.merge(result,on='driver_code')
+
+    result = result.sort_values(by=['driver_code','Date'], ascending=[True,False])
+
+    result['timeframe_monthly'] = result['Date'].dt.strftime('%b-%Y')
+    result["is_approved"]=""
+    result["db_id"]=""
+    # result.to_excel(os.path.join(os.path.dirname(__file__))+'/test.xlsx')
+
+    result = result.rename(columns={'Value': 'value'})
+    # result = result[["db_id", "source_ref", "commodity_name", "commodity_group", "Notes","commodity_grade", "commodity_subgrade", "geography", "unit", "timeframe_monthly", "value" , "is_approved"]]
+    result = result[['db_id','driver_code', 'driver_description', 'geography','unit','timeframe_monthly','value','is_approved']]
+
+    result.to_excel(os.path.join(os.path.dirname(__file__)) + '/France_CD_Data.xlsx',index=False)
+
+
+if __name__ == '__main__':
+    FetchCPData_France()
