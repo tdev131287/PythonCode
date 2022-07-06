@@ -1,0 +1,10 @@
+
+
+import pandas as pd
+df=pd.read_excel('global_top5Rawdata.xlsx',converters={'hs_code':str})
+# import ipdb; ipdb.set_trace()
+
+
+df1=df.sort_values(['hs_code','data_value'],ascending = False).groupby('hs_code').head(5)
+
+df1.to_excel('top5.xlsx',index=False)
